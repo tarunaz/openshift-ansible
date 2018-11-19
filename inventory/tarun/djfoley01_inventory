@@ -1,0 +1,182 @@
+###############################################################################
+# User and Deployment Type Configuration                                      #
+###############################################################################
+# SSH user, this user should allow ssh based auth without requiring a
+# password. If using ssh key based auth, then the key should be managed by an
+# ssh agent.
+# This can be left out using Ansible Tower, user will be specified in the UI
+#ansible_user: root
+
+# Specify the deployment type. Valid values are origin and openshift-enterprise.
+openshift_deployment_type: openshift-enterprise
+
+# Specify the generic release of OpenShift to install. This is used mainly just during installation, after which we
+# rely on the version running on the first master. Works best for containerized installs where we can usually
+# use this to lookup the latest exact version of the container images, which is the tag actually used to configure
+# the cluster. For RPM installations we just verify the version detected in your configured repos matches this
+# release.
+openshift_release: v3.9
+openshift_disable_check: memory_availability,disk_availability,package_version
+
+##############################################################################
+# Sub domain Configuration                                                   #
+##############################################################################
+
+# default subdomain to use for exposed routes, you should have wildcard dns
+# for *.apps.disconnected.internal that points at your infra nodes which will run
+# your router
+openshift_master_default_subdomain: ohio39.levvel-labs.io
+
+#Set cluster_hostname to point at your load balancer
+#openshift_master_cluster_hostname: testlb-1338709649.us-east-2.elb.amazonaws.com
+
+openshift_enable_unsupported_configurations: True
+
+# Configuring External Docker registry.
+openshift_docker_insecure_registries: 172.31.0.0/16
+#openshift_docker_additional_registries=<ecr-url>
+
+###############################################################################
+# Authentication  Specifications                                              #
+###############################################################################
+# Debug level for all OpenShift components (Defaults to 2)
+debug_level: 2
+
+# htpasswd auth
+openshift_master_identity_providers: [{'name': 'htpasswd_auth', 'login': 'true', 'challenge': 'true', 'kind': 'HTPasswdPasswordIdentityProvider', 'filename': '/etc/origin/master/htpasswd'}]
+openshift_master_htpasswd_file: /root/user.htpasswd
+
+# LDAP auth
+#openshift_master_identity_providers: [{'name': 'my_ldap_provider', 'challenge': 'true', 'login': 'true', 'kind': 'LDAPPasswordIdentityProvider', 'attributes': {'id': ['dn'], 'email': ['mail'], 'name': ['cn'], 'preferredUsername': ['uid']}, 'bindDN': '', 'bindPassword': '', 'ca': 'my-ldap-ca.crt', 'insecure': 'false', 'url': 'ldap://ldap.example.com:389/ou=users,dc=example,dc=com?uid'}]
+
+###############################################################################
+# Etcd Storage                                                                #
+###############################################################################
+openshift_hosted_etcd_storage_kind: nfs
+openshift_hosted_etcd_storage_access_modes: ["ReadWriteOnce"]
+openshift_hosted_etcd_storage_host: fs-c41bd6bd.efs.us-east-2.amazonaws.com
+openshift_hosted_etcd_storage_nfs_directory: /
+openshift_hosted_etcd_storage_volume_name: etcd
+openshift_hosted_etcd_storage_volume_size: 10G
+openshift_hosted_etcd_storage_labels: {'storage': 'etcd'}
+
+###############################################################################
+# Cloud Provider Configuration                                                #
+###############################################################################
+# Note: You may make use of environment variables rather than store
+# sensitive configuration within the ansible inventory.
+# For example:
+#openshift_cloudprovider_aws_access_key: "{{ lookup('env','AWS_ACCESS_KEY_ID') }}"
+#openshift_cloudprovider_aws_secret_key: "{{ lookup('env','AWS_SECRET_ACCESS_KEY') }}"
+#
+# AWS
+#openshift_cloudprovider_kind: aws
+# Note: IAM profiles may be used instead of storing API credentials on disk.
+#openshift_cloudprovider_aws_access_key: aws_access_key_id
+#openshift_cloudprovider_aws_secret_key: aws_secret_access_key
+
+###############################################################################
+# Load Balancer Configuration                                                 #
+###############################################################################
+# Native high availability (default cluster method)
+# If no lb group is defined, the installer assumes that a load balancer has
+# been preconfigured. For installation the value of
+# openshift_master_cluster_hostname must resolve to the load balancer
+# or to one or all of the masters defined in the inventory if no load
+# balancer is present.
+openshift_master_cluster_method: native
+openshift_master_cluster_hostname: testlb-1338709649.us-east-2.elb.amazonaws.com
+
+# If an external load balancer is used public hostname should resolve to
+# external load balancer address
+openshift_master_cluster_public_hostname: testlb-1338709649.us-east-2.elb.amazonaws.com
+
+###############################################################################
+# Router                                                                      #
+###############################################################################
+# Router selector (optional)
+# Router will only be created if nodes matching this label are present.
+# Default value: 'region=infra'
+openshift_hosted_router_selector: 'region=infra'
+
+###############################################################################
+# Registry Configuration                                                      #
+###############################################################################
+# Registry selector (optional)
+# Registry will only be created if nodes matching this label are present.
+# Default value: 'region=infra'
+openshift_hosted_registry_selector: 'region=infra'
+
+# Registry Storage Options
+# External NFS Host
+openshift_hosted_registry_storage_kind: nfs
+openshift_hosted_registry_storage_access_modes: ['ReadWriteMany']
+openshift_hosted_registry_storage_host: fs-c41bd6bd.efs.us-east-2.amazonaws.com
+openshift_hosted_registry_storage_nfs_directory: /
+openshift_hosted_registry_storage_volume_name: registry
+openshift_hosted_registry_storage_volume_size: 10Gi
+
+###############################################################################
+# Metrics Configuration                                                      #
+###############################################################################
+# Metrics deployment
+# External NFS Host
+openshift_metrics_install_metrics: true
+openshift_metrics_storage_kind: nfs
+openshift_metrics_storage_access_modes: ['ReadWriteOnce']
+openshift_metrics_storage_host: fs-c41bd6bd.efs.us-east-2.amazonaws.com
+openshift_metrics_storage_nfs_directory: /
+openshift_metrics_storage_volume_name: metrics
+openshift_metrics_storage_volume_size: 10Gi
+openshift_metrics_storage_labels: {'storage': 'metrics'}
+
+# Node Selectors
+openshift_metrics_cassandra_nodeselector: {"region":"infra"}
+openshift_metrics_hawkular_nodeselector: {"region":"infra"}
+openshift_metrics_heapster_nodeselector: {"region":"infra"}
+
+###############################################################################
+# Logging Configuration                                                       #
+###############################################################################
+# Logging deployment, Currently logging deployment is disabled by default, enable it by setting this
+openshift_logging_install_logging: true
+logging_elasticsearch_rollout_override: true
+
+# External NFS Host
+openshift_logging_storage_kind: nfs
+openshift_logging_storage_access_modes: ['ReadWriteOnce']
+openshift_logging_storage_host: fs-c41bd6bd.efs.us-east-2.amazonaws.com
+openshift_logging_storage_nfs_directory: /
+openshift_logging_storage_volume_name: logging
+openshift_logging_storage_volume_size: 10Gi
+openshift_logging_storage_labels: {'storage': 'logging'}
+
+# Node Selectors
+openshift_logging_curator_nodeselector: {"region":"infra"}
+openshift_logging_kibana_nodeselector: {"region":"infra"}
+openshift_logging_es_nodeselector: {"region":"infra"}
+
+###############################################################################
+# SDN/Network Plugin Configuration                                            #
+###############################################################################
+# Configure the multi-tenant SDN plugin (default is 'redhat/openshift-ovs-subnet')
+os_sdn_network_plugin_name: 'redhat/openshift-ovs-multitenant'
+
+# Configure SDN cluster network and kubernetes service CIDR blocks.
+osm_cluster_network_cidr: 10.128.0.0/14
+openshift_portal_net: 172.31.0.0/16
+
+###############################################################################
+# Master API Ports Configuration                                              #
+###############################################################################
+# Configure master API and console ports.
+openshift_master_api_port: 8443
+openshift_master_console_port: 8443
+openshift_web_console_nodeselector: {'region':'infra'}
+
+###############################################################################
+# OpenShift Clock Configuration                                               #
+###############################################################################
+# Configure usage of openshift_clock role.
+openshift_clock_enabled: true
+
