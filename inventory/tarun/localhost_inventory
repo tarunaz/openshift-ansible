@@ -8,8 +8,10 @@ etcd
 [OSEv3:vars]
 # if your target hosts are Fedora uncomment this
 #ansible_python_interpreter=/usr/bin/python3
+
 openshift_deployment_type=origin
 openshift_portal_net=172.30.0.0/16
+
 # localhost likely doesn't meet the minimum requirements
 openshift_disable_check=disk_availability,memory_availability
 
