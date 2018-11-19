@@ -7,7 +7,7 @@ etcd
 
 [OSEv3:vars]
 
-deployment_type=openshift-enterprise
+openshift_deployment_type=openshift-enterprise
 openshift_disable_check=disk_availability,memory_availability
 
 openshift_portal_net=172.30.0.0/16
