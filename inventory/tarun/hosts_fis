@@ -1,0 +1,117 @@
+[OSEv3:vars]
+ansible_ssh_user=root
+openshift_deployment_type=openshift-enterprise
+openshift_release=v3.6
+
+# Disabled check as the masters don’t have docker storage, but have scheduling disabled.
+openshift_disable_check=docker_storage
+
+# 8443 or 443? 
+openshift_master_api_port=443
+openshift_master_console_port=443
+
+
+###########################
+# Certificate Customization
+openshift_hosted_router_certificate={"certfile": "/root/openshift/cluster1/router-certs/wild.snapshot.example.net.crt", "keyfile": "/root/openshift/cluster1/router-certs/wild.snapshot.example.net.key", "cafile": "/root/openshift/cluster1/router-certs/IntermediateCA.cer"}
+
+openshift_master_named_certificates=[{"certfile": "/root/openshift/cluster1/api-certs/star.example.net.crt", "keyfile": "/root/openshift/cluster1/api-certs/star.example.net.key", "names": ["master1.example.net"], "cafile": "/root/openshift/cluster1/api-certs/gd_bundle-g2-g1.crt"}]
+
+# Ensure these are deployed on each playbook run
+openshift_master_overwrite_named_certificates=true
+###########################
+
+
+###########################
+# Network configuration
+openshift_portal_net=172.30.0.0/16
+osm_cluster_network_cidr=10.128.0.0/14
+###########################
+ 
+openshift_master_cluster_method=native
+openshift_master_cluster_hostname=master1-internal.example.net
+openshift_master_cluster_public_hostname=master1.example.net
+openshift_master_default_subdomain=snapshot.example.net
+os_sdn_network_plugin_name='redhat/openshift-ovs-multitenant'
+ 
+# Authentication. Using htpasswd for admin user and LDAP for everything else
+openshift_master_identity_providers=[{'name': 'htpasswd_auth', 'login': 'true', 'challenge': 'true', 'kind': 'HTPasswdPasswordIdentityProvider', 'filename': '/etc/origin/master/htpasswd'}, {"name":"SFAD","challenge":true,"login":true,"kind":"LDAPPasswordIdentityProvider","attributes":{"id":["dn"],"email":["mail"],"name":["cn"],"preferredUsername":["sAMAccountName"]},"bindDN":"CN=Bind POC Openshift,CN=Users,DC=MFOUNDRY,DC=NET","bindPassword":"<<REDACTED>>","insecure":true,"url":"ldap://example.mfoundry.net/DC=MFOUNDRY,DC=NET?sAMAccountName?sub"}]
+
+openshift_master_htpasswd_users={'admin': '<<REDACTED>>'}
+
+#openshift_docker_additional_registries=repository.example.com
+openshift_docker_insecure_registries=repository.example.com
+#openshift_docker_blocked_registries=registry.access.redhat.com,docker.io
+openshift_docker_blocked_registries=docker.io
+ 
+openshift_hosted_manage_registry=true
+openshift_hosted_registry_selector='region=infra'
+openshift_hosted_registry_storage_kind=nfs
+openshift_hosted_registry_storage_access_modes=['ReadWriteMany']
+openshift_hosted_registry_storage_host=legion-nfs1-01.dmz.example.net
+openshift_hosted_registry_storage_nfs_directory=/oc-cluster1
+openshift_hosted_registry_storage_volume_name=registry
+openshift_hosted_registry_storage_volume_size=50Gi
+
+openshift_hosted_router_selector='region=infra'
+openshift_hosted_managed_router=true
+
+ 
+###[7] LOGGING SETTINGS
+openshift_hosted_logging_deploy=true
+#openshift_hosted_logging_hostname=kibana.{ROUTER_DOMAIN}
+#openshift_hosted_logging_deployer_version=v3.6
+openshift_hosted_logging_elasticsearch_cluster_size=3
+openshift_hosted_logging_elasticsearch_nodeselector="region=infra"
+openshift_hosted_logging_kibana_nodeselector="region=infra"
+openshift_hosted_logging_curator_nodeselector="region=infra"
+# below keeps one additional copy of logs in the EFK cluster 
+# for redundancy in the event of a infra node loss
+openshift_logging_es_number_of_replicas=1
+
+# Verify values below
+openshift_hosted_logging_es-instance-ram=8G
+openshift_logging_kibana_replica_count=2
+ 
+###[8] METRICS SETTINGS
+openshift_hosted_metrics_deploy=true
+#openshift_hosted_metrics_public_url=https://hawkular-metrics.{ROUTER_DOMAIN}/hawkular/metrics
+#openshift_hosted_metrics_deployer_version=v3.6
+openshift_metrics_cassandra_replicas=3
+openshift_metrics_hawkular_metrics=2
+openshift_metrics_hawkular_nodeselector='{"region":"infra"}'
+openshift_metrics_cassandra_nodeselector='{"region":"infra"}'
+openshift_metrics_heapster_nodeselector='{"region":"infra"}'
+openshift_metrics_selector="region=infra"
+
+openshift_node_kubelet_args={'pods-per-core': ['10'], 'max-pods': ['250'], 'image-gc-high-threshold': ['90'], 'image-gc-low-threshold': ['80'], 'kube-reserved': ['cpu=100m,memory=300M'], 'system-reserved': ['cpu=100m,memory=100M']}
+openshift_docker_options="--log-driver=json-file --log-opt max-size=50m --log-opt max-file=100"
+
+
+[OSEv3:children]
+masters
+etcd
+nodes
+ 
+[masters]
+legion-master1-01.dmz.example.net
+legion-master1-02.dmz.example.net
+legion-master1-03.dmz.example.net
+ 
+[etcd]
+legion-master1-01.dmz.example.net
+legion-master1-02.dmz.example.net
+legion-master1-03.dmz.example.net
+ 
+[nodes]
+legion-app1-01.dmz.example.net openshift_node_labels="{'region': 'primary'}" openshift_hostname=legion-app1-01.dmz.example.net
+legion-app1-02.dmz.example.net openshift_node_labels="{'region': 'primary'}" openshift_hostname=legion-app1-02.dmz.example.net
+legion-app1-03.dmz.example.net openshift_node_labels="{'region': 'primary'}" openshift_hostname=legion-app1-03.dmz.example.net
+
+legion-infra1-01.dmz.example.net openshift_node_labels="{'region': 'infra','log-metrics-node': '1'}" openshift_hostname=legion-infra1-01.dmz.example.net
+legion-infra1-02.dmz.example.net openshift_node_labels="{'region': 'infra','log-metrics-node': '2'}" openshift_hostname=legion-infra1-02.dmz.example.net
+legion-infra1-03.dmz.example.net openshift_node_labels="{'region': 'infra','log-metrics-node': '3'}" openshift_hostname=legion-infra1-03.dmz.example.net
+
+legion-master1-01.dmz.example.net openshift_node_labels="{'region': 'master'}" openshift_hostname=legion-master1-01.dmz.example.net openshift_schedulable=False
+legion-master1-02.dmz.example.net openshift_node_labels="{'region': 'master'}" openshift_hostname=legion-master1-02.dmz.example.net openshift_schedulable=False
+legion-master1-03.dmz.example.net openshift_node_labels="{'region': 'master'}" openshift_hostname=legion-master1-03.dmz.example.net openshift_schedulable=False
