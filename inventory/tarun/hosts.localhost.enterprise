@@ -1,3 +1,4 @@
+
 #bare minimum hostfile
 
 [OSEv3:children]
@@ -7,16 +8,15 @@ etcd
 
 [OSEv3:vars]
 
+ansible_ssh_user=root
 openshift_deployment_type=openshift-enterprise
+openshift_release=v3.10
+
 openshift_disable_check=disk_availability,memory_availability
 
 openshift_portal_net=172.30.0.0/16
 
 openshift_node_groups=[{'name': 'node-config-all-in-one', 'labels': ['node-role.kubernetes.io/master=true', 'node-role.kubernetes.io/infra=true', 'node-role.kubernetes.io/compute=true']}]
-
-openshift_enable_service_catalog=true
-template_service_broker_install=true
-openshift_template_service_broker_namespaces=['openshift']
 
 [masters]
 localhost ansible_connection=local
